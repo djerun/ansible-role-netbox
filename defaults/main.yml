@@ -1,0 +1,125 @@
+---
+netbox_service_name: netbox
+netbox_service_start: True
+netbox_system_user: netbox
+
+netbox_site_conf_name: "{{ netbox_service_name }}.conf"
+netbox_site_conf_listen: 80
+netbox_site_conf_listen_ssl: 443
+
+netbox_rq_service_name: netbox-rq
+netbox_rq_service_start: "{{ netbox_service_start }}"
+
+redis_service_name: redis
+redis_service_start: True
+
+netbox_aur_pkg_dir: "{{ aur_pkg_dir }}"
+
+netbox_aur_pkg_netbox_path: "{{ netbox_aur_pkg_dir }}/netbox-3.1.1-3-any.pkg.tar.zst"
+netbox_aur_pkg_python_django_pglocks_path: "{{ netbox_aur_pkg_dir }}/python-django-pglocks-1.0.4-2-any.pkg.tar.zst"
+netbox_aur_pkg_python_django_prometheus_path: "{{ netbox_aur_pkg_dir }}/python-django-prometheus-2.1.0-4-any.pkg.tar.zst"
+netbox_aur_pkg_python_django_rq_path: "{{ netbox_aur_pkg_dir }}/python-django-rq-2.3.2-1-any.pkg.tar.zst"
+netbox_aur_pkg_python_django_tables2_path: "{{ netbox_aur_pkg_dir }}/python-django-tables2-2.3.4-3-any.pkg.tar.zst"
+netbox_aur_pkg_python3_saml_path: "{{ netbox_aur_pkg_dir }}/python3-saml-1.13.0-1-any.pkg.tar.zst"
+netbox_aur_pkg_python_django_taggit_path: "{{ netbox_aur_pkg_dir }}/python-django-taggit-1.3.0-1-any.pkg.tar.zst"
+netbox_aur_pkg_python_coreapi_path: "{{ netbox_aur_pkg_dir }}/python-coreapi-2.3.3-1-any.pkg.tar.zst"
+netbox_aur_pkg_python_django_timezone_field_path: "{{ netbox_aur_pkg_dir }}/python-django-timezone-field-5.0-0-any.pkg.tar.zst"
+netbox_aur_pkg_python_coreschema_path: "{{ netbox_aur_pkg_dir }}/python-coreschema-0.0.4-2-any.pkg.tar.zst"
+netbox_aur_pkg_python_drf_yasg_path: "{{ netbox_aur_pkg_dir }}/python-drf-yasg-1.20.0-4-any.pkg.tar.zst"
+netbox_aur_pkg_python_django_cacheops_path: "{{ netbox_aur_pkg_dir }}/python-django-cacheops-6.0-1-any.pkg.tar.zst"
+netbox_aur_pkg_python_graphene_django_path: "{{ netbox_aur_pkg_dir }}/python-graphene-django-2.15.0-2-any.pkg.tar.zst"
+netbox_aur_pkg_python_django_cors_headers_path: "{{ netbox_aur_pkg_dir }}/python-django-cors-headers-3.11.0-0-any.pkg.tar.zst"
+netbox_aur_pkg_python_itypes_path: "{{ netbox_aur_pkg_dir }}/python-itypes-1.2.0-1-any.pkg.tar.zst"
+netbox_aur_pkg_python_django_graphiql_debug_toolbar_path: "{{ netbox_aur_pkg_dir }}/python-django-graphiql-debug-toolbar-0.2.0-1-any.pkg.tar.zst"
+netbox_aur_pkg_python_rq_path: "{{ netbox_aur_pkg_dir }}/python-rq-1.10.1-2-any.pkg.tar.zst"
+netbox_aur_pkg_python_django_js_asset_git_path: "{{ netbox_aur_pkg_dir }}/python-django-js-asset-git-2.0.r1.g9893c9e-1-any.pkg.tar.zst"
+netbox_aur_pkg_python_social_auth_app_django_path: "{{ netbox_aur_pkg_dir }}/python-social-auth-app-django-5.0.0-1-any.pkg.tar.zst"
+netbox_aur_pkg_python_django_mptt_path: "{{ netbox_aur_pkg_dir }}/python-django-mptt-0.13.4-1-any.pkg.tar.zst"
+netbox_aur_pkg_python_social_auth_core_path: "{{ netbox_aur_pkg_dir }}/python-social-auth-core-4.2.0-1-any.pkg.tar.zst"
+
+netbox_config_db:
+  database: netbox
+  user:
+  password:
+  host: /var/run/postgresql
+  port: 5432
+  locale: en_US.UTF-8
+  encoding: UTF8
+  conn_max_age: 300
+
+netbox_config_redis_tasks:
+  host: localhost
+  port: 6379
+  password:
+  database: 0
+  ssl: False
+
+netbox_config_redis_caching:
+  host: localhost
+  port: 6379
+  password:
+  database: 1
+  ssl: False
+
+# netbox_config_secret_key: ONLY_SET_THIS_IN_INVENTORY_USING_PROPER_SECRET_MANAGEMENT
+
+netbox_config_listen_path: /run/netbox/netbox.sock
+netbox_config_url_base_path:
+
+netbox_config_ssl: True
+netbox_config_external_reverse_proxy: False
+
+netbox_config_cors_origin_allow_all: False
+netbox_config_cors_origin_whitelist: []
+netbox_config_cors_origin_regex_whitelist: []
+
+netbox_config_email: {}
+
+netbox_config_exempt_view_permissions: []
+
+netbox_config_http_proxies: {}
+
+netbox_config_internal_ips:
+- '127.0.0.1'
+- '::1'
+
+netbox_config_logging: {}
+
+netbox_config_login_persistence: False
+netbox_config_login_required: False
+netbox_config_login_timeout: None
+
+netbox_config_media_root:
+
+netbox_config_storage_backend:
+netbox_config_storage_config: {}
+
+netbox_config_metrics_enabled: False
+
+netbox_config_plugins: []
+netbox_config_plugins_config: {}
+
+netbox_config_remote_auth_enabled: False
+netbox_config_remote_auth_backend: 'netbox.authentication.RemoteUserBackend'
+netbox_config_remote_auth_header: 'HTTP_REMOTE_USER'
+netbox_config_remote_auth_auto_create_user: True
+netbox_config_remote_auth_default_groups: []
+netbox_config_remote_auth_default_permissions: {}
+
+netbox_config_reports_root:
+
+netbox_config_rq_default_timeout: 300
+
+netbox_config_scripts_root:
+
+netbox_config_session_cookie_name: sessionid
+netbox_config_session_file_path: null
+
+netbox_config_time_zone: UTC
+
+netbox_config_date_format: 'N j, Y'
+netbox_config_short_date_format: 'Y-m-d'
+netbox_config_time_format: 'g:i a'
+netbox_config_short_time_format: 'H:i:s'
+netbox_config_datetime_format: 'N j, Y g:i a'
+netbox_config_short_datetime_format: 'Y-m-d H:i'

@@ -1,0 +1,252 @@
+---
+# NetBox Installation
+
+- name: ensure AUR packages installed
+  community.general.pacman:
+    name:
+    - "{{ netbox_aur_pkg_netbox_path }}"
+    - "{{ netbox_aur_pkg_python_django_pglocks_path }}"
+    - "{{ netbox_aur_pkg_python_django_prometheus_path }}"
+    - "{{ netbox_aur_pkg_python_django_rq_path }}"
+    - "{{ netbox_aur_pkg_python_django_tables2_path }}"
+    - "{{ netbox_aur_pkg_python3_saml_path }}"
+    - "{{ netbox_aur_pkg_python_django_taggit_path }}"
+    - "{{ netbox_aur_pkg_python_coreapi_path }}"
+    - "{{ netbox_aur_pkg_python_django_timezone_field_path }}"
+    - "{{ netbox_aur_pkg_python_coreschema_path }}"
+    - "{{ netbox_aur_pkg_python_drf_yasg_path }}"
+    - "{{ netbox_aur_pkg_python_django_cacheops_path }}"
+    - "{{ netbox_aur_pkg_python_graphene_django_path }}"
+    - "{{ netbox_aur_pkg_python_django_cors_headers_path }}"
+    - "{{ netbox_aur_pkg_python_itypes_path }}"
+    - "{{ netbox_aur_pkg_python_django_graphiql_debug_toolbar_path }}"
+    - "{{ netbox_aur_pkg_python_rq_path }}"
+    - "{{ netbox_aur_pkg_python_django_js_asset_git_path }}"
+    - "{{ netbox_aur_pkg_python_social_auth_app_django_path }}"
+    - "{{ netbox_aur_pkg_python_django_mptt_path }}"
+    - "{{ netbox_aur_pkg_python_social_auth_core_path }}"
+  tags:
+  - packages
+
+## Postgres
+
+- name: ensure database exists
+  become: yes
+  become_user: "{{ pg_system_user }}"
+  community.postgresql.postgresql_db:
+    name: "{{ netbox_config_db['database'] }}"
+    state: present
+    encoding: "{{ netbox_config_db['encoding'] }}"
+    lc_collate: "{{ netbox_config_db['locale'] }}"
+    lc_ctype: "{{ netbox_config_db['locale'] }}"
+
+### TODO make this work when importing a database from a dump (or add an optional import task here)
+- name: ensure the database user has access to the database
+  become: yes
+  become_user: "{{ pg_system_user }}"
+  community.postgresql.postgresql_user:
+    db: "{{ netbox_config_db['database'] }}"
+    name: "{{ netbox_system_user }}"
+    priv: ALL
+    state: present
+  tags:
+  - permissions
+
+- name: ensure the database user is not over-privileged
+  become: yes
+  become_user: "{{ pg_system_user }}"
+  community.postgresql.postgresql_user:
+    name: "{{ netbox_system_user }}"
+    role_attr_flags: NOSUPERUSER,NOCREATEDB
+    state: present
+  tags:
+  - permissions
+
+## Redis
+
+### TODO: move this to a standalone: redis role
+- name: ensure latest known version is installed
+  community.general.pacman:
+    name:
+    - redis
+    state: latest
+    update_cache: no # don't do -Sy
+  tags:
+  - packages
+
+### maybe TODO: config customization
+
+## NetBox
+
+- name: ensure config is correct
+  ansible.builtin.template:
+    src: configuration.py.j2
+    dest: /etc/netbox/configuration.py
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+  - netbox.reloaded
+  tags:
+  - config
+
+# TODO: create admin user(s)
+
+## Gunicorn
+
+### TODO put this in a gunicorn role
+- name: ensure latest known version is installed
+  community.general.pacman:
+    name:
+    - gunicorn
+    state: latest
+    update_cache: no # dont do -Sy
+  tags:
+  - packages
+
+# TODO
+
+## Nginx
+
+- name: check if DH file exists
+  stat:
+    path: "/etc/ssl/private/{{ netbox_service_name }}_self.dh"
+  register: file_netbox_ssl_self_dh
+  when:
+  - netbox_config_ssl
+  - not netbox_config_external_reverse_proxy
+  tags:
+  - https
+
+### TODO: do this with community.crypto instead
+- name: ensure dh file exists (SLOW!)
+  command: "openssl dhparam --out /etc/ssl/private/{{ netbox_service_name }}_self.dh 4096"
+  notify:
+  - nginx.reloaded
+  when:
+  - netbox_config_ssl
+  - not netbox_config_external_reverse_proxy
+  - not file_netbox_ssl_self_dh.stat.exists
+  tags:
+  - https
+
+- name: check if certificate key exists
+  stat:
+    path: "/etc/ssl/private/{{ netbox_service_name }}_self.key"
+  register: file_netbox_ssl_self_key
+  when:
+  - netbox_config_ssl
+  - not netbox_config_external_reverse_proxy
+  tags:
+  - https
+
+### TODO: do this with community.crypto instead
+### TODO: allow letsencrypt instead of always falling back to self-signed
+- name: ensure key file exists
+  command: 'openssl genrsa -out /etc/ssl/private/{{ netbox_service_name }}_self.key 4096'
+  when:
+  - netbox_config_ssl
+  - not netbox_config_external_reverse_proxy
+  - not file_netbox_ssl_self_key.stat.exists
+  tags:
+  - https
+
+- name: check if certificate signing request exists
+  stat:
+    path: "/etc/ssl/private/{{ netbox_service_name }}_self.crt"
+  register: file_netbox_ssl_self_csr
+  when:
+  - netbox_config_ssl
+  - not netbox_config_external_reverse_proxy
+  tags:
+  - https
+
+- name: check if certificate file exists
+  stat:
+    path: "/etc/ssl/private/{{ netbox_service_name }}_self.crt"
+  register: file_netbox_ssl_self_crt
+  when:
+  - netbox_config_ssl
+  - not netbox_config_external_reverse_proxy
+  tags:
+  - https
+
+### TODO: do this with community.crypto instead
+### TODO: allow letsencrypt instead of always falling back to self-signed
+- name: ensure certificate signing request exists
+  command: 'openssl req -new -sha256 -key /etc/ssl/private/{{ netbox_service_name }}_self.key -out /etc/ssl/private/{{ netbox_service_name }}_self.csr -subj "/CN={{ netbox_config_domain }}"'
+  when:
+  - netbox_config_ssl
+  - not netbox_config_external_reverse_proxy
+  - not file_netbox_ssl_self_csr.stat.exists
+  - not file_netbox_ssl_self_crt.stat.exists
+  tags:
+  - https
+
+### TODO: do this with community.crypto instead
+### TODO: allow letsencrypt instead of always falling back to self-signed
+- name: ensure certificate file exists
+  command: 'openssl x509 -req -days 1095 -in /etc/ssl/private/{{ netbox_service_name }}_self.csr -signkey /etc/ssl/private/{{ netbox_service_name }}_self.key -out /etc/ssl/private/{{ netbox_service_name }}_self.crt'
+  notify:
+  - nginx.reloaded
+  when:
+  - netbox_config_ssl
+  - not netbox_config_external_reverse_proxy
+  - not file_netbox_ssl_self_crt.stat.exists
+  tags:
+  - https
+
+- name: ensure site config is correct
+  ansible.builtin.template:
+    src: netbox-site.conf.j2
+    dest: "/etc/nginx/sites-available/{{ netbox_site_conf_name }}"
+    owner: root
+    group: root
+    mode: 0644
+  notify:
+  - nginx.reloaded
+  when:
+  - not netbox_config_external_reverse_proxy
+
+- name: ensure site config is enabled
+  ansible.builtin.file:
+    path: "/etc/nginx/sites-enabled/{{ netbox_site_conf_name }}"
+    state: link
+    src: "/etc/nginx/sites-available/{{ netbox_site_conf_name }}"
+  notify:
+  - nginx.reloaded
+  when:
+  - not netbox_config_external_reverse_proxy
+  tags:
+  - config
+
+## LDAP (Optional)
+
+### TODO I don't use ldap
+
+## Services
+
+### TODO: move this to a standalone redis role
+- name: ensure redis service is running
+  ansible.builtin.service:
+    name: "{{ redis_service_name }}"
+    enabled: yes
+    state: started
+  when:
+  - redis_service_start | bool
+
+- name: ensure netbox service is running
+  ansible.builtin.service:
+    name: "{{ netbox_service_name }}"
+    enabled: yes
+    state: started
+  when:
+  - netbox_service_start | bool
+
+- name: ensure netbox-rq service is running
+  ansible.builtin.service:
+    name: "{{ netbox_rq_service_name }}"
+    enabled: yes
+    state: started
+  when:
+  - netbox_rq_service_start | bool

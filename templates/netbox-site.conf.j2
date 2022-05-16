@@ -1,0 +1,56 @@
+server {
+    listen      {{ netbox_site_conf_listen }};
+    listen [::]:{{ netbox_site_conf_listen }};
+    server_name {{ netbox_config_domain }};
+
+{% if netbox_config_ssl and not netbox_config_external_reverse_proxy %}
+    return 308 https://$server_name$request_uri;
+}
+
+server {
+    listen      {{ netbox_site_conf_listen_ssl }} ssl http2;
+    listen [::]:{{ netbox_site_conf_listen_ssl }} ssl http2;
+    server_name {{ netbox_config_domain }};
+
+    # https://ssl-config.mozilla.org/
+    # guideline=5.6
+    ssl_session_timeout 1d;
+    ssl_session_cache shared:SSL:10m;  # about 40000 sessions
+    ssl_session_tickets off;
+
+    # we create our own dhparam and do not use mozilla's
+    ssl_dhparam /etc/ssl/private/{{ netbox_service_name }}_self.dh;
+
+    # intermediate configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384;
+    ssl_prefer_server_ciphers off; # this is recommended by mozilla...
+
+    # TODO 
+
+    # TODO OCSP stapling
+
+    ssl_certificate     /etc/ssl/private/{{ netbox_service_name }}_self.crt;
+    ssl_certificate_key /etc/ssl/private/{{ netbox_service_name }}_self.key;
+
+    # TODO HSTS settings
+{% endif %}
+
+{% if netbox_config_url_base_path %}
+    location /{{ netbox_config_url_base_path }}/ {
+{% else %}
+    location / {
+{% endif %}
+        proxy_pass http://unix:{{ netbox_config_listen_path }}:/;
+        proxy_set_header Host %host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+{% if netbox_site_conf_extra is defined %}
+
+{% for extra in netbox_site_conf_extra %}
+    {{ extra }}
+{% endfor %}
+{% endif %}
+}

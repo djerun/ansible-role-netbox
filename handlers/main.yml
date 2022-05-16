@@ -1,0 +1,73 @@
+---
+- name: netbox.enabled
+  service:
+    name: "{{ netbox_service_name }}"
+    enabled: yes
+
+- name: netbox.disabled
+  service:
+    name: "{{ netbox_service_name }}"
+    enabled: no
+
+- name: netbox.started
+  service:
+    name: "{{ netbox_service_name }}"
+    state: started
+  when:
+  - netbox_service_start | bool
+
+- name: netbox.reloaded
+  service:
+    name: "{{ netbox_service_name }}"
+    state: reloaded
+  when:
+  - netbox_service_start | bool
+
+- name: netbox.restarted
+  service:
+    name: "{{ netbox_service_name }}"
+    state: restarted
+  when:
+  - netbox_service_start | bool
+
+- name: netbox.stopped
+  service:
+    name: "{{ netbox_service_name }}"
+    state: stopped
+
+
+- name: netbox_rq.enabled
+  service:
+    name: "{{ netbox_service_name }}"
+    enabled: yes
+
+- name: netbox_rq.disabled
+  service:
+    name: "{{ netbox_rq_service_name }}"
+    enabled: no
+
+- name: netbox_rq.started
+  service:
+    name: "{{ netbox_rq_service_name }}"
+    state: started
+  when:
+  - netbox_rq_service_start | bool
+
+- name: netbox_rq.reloaded
+  service:
+    name: "{{ netbox_rq_service_name }}"
+    state: reloaded
+  when:
+  - netbox_rq_service_start | bool
+
+- name: netbox_rq.restarted
+  service:
+    name: "{{ netbox_rq_service_name }}"
+    state: restarted
+  when:
+  - netbox_rq_service_start | bool
+
+- name: netbox_rq.stopped
+  service:
+    name: "{{ netbox_rq_service_name }}"
+    state: stopped
